@@ -1,19 +1,8 @@
 import streamlit as st
 import pandas as pd
 import json
+from DatabaseAppHelper import *
 
-st.markdown('''
-## Hello World
-
-This is my first streamlit app
-
-*Italic*
-
-**Bold**
-
-***Bold and italic***
-
-''')
 with st.sidebar:
     st.header("Databank Selection")
     uploaded_file = st.file_uploader("Choose a databank",type="json")
@@ -50,4 +39,3 @@ for x, email in enumerate(detail_df['Produktname']):
     do_action = button_phold.button("Choose", key=x)
     if do_action:
             pass # do some action with a row's data
-                
