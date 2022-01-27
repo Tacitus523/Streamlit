@@ -16,12 +16,10 @@ if 'product_index' not in st.session_state:
     st.session_state.product_index = None
     
 
-uploaded_database, product_search = display_sidebar()
-
-database_dict = load_database(uploaded_database)
-display_database_details(database_dict)
-display_query_result(database_dict, product_search)
+database_dict, product_search = display_sidebar()
 
 
-if st.session_state.product_index is None:
-    st.stop()
+query_result = display_query_result(database_dict, product_search)
+display_query_contents(query_result)
+
+
