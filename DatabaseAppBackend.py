@@ -10,12 +10,16 @@ def load_database(uploaded_database):
     return database_dict
     
 def retrieve_database_details(database_dict):
-    database_detail_data = [pd.DataFrame(database_dict[product][i].get("Details"),index=[i]) for product in database_dict for i in range(len(database_dict[product]))]
+    database_detail_data = [pd.DataFrame(database_dict[product][i].get("Details"), index=[i]) for product in database_dict for i in range(len(database_dict[product]))]
+    if not database_detail_data:
+        return None
     database_detail_df = pd.concat(database_detail_data)
     return database_detail_df
 
 def retrieve_unique_names(database_dict):
     database_detail_df = retrieve_database_details(database_dict)
+    if not database_detail_df:
+        return None
     unique_names = pd.Series(database_detail_df["Produktname"].unique(), name = "Produktname")
     unique_names.sort_values(inplace=True)
     return unique_names
@@ -34,8 +38,11 @@ def retrieve_query_details(query_result):
 def retrieve_calibration_data(measurements):
     #Validierung?
     messungen = measurements.get("Kalibrierungen")
+    if messungen is None:
+        return None, None
+    
+    calibration_amount = len(messungen)
     bsa_konzentrationen = messungen[0].get("BSA-Konzentrationen [µg/ml]").copy()
-        
     #Messreihen trennen
     opa_extinktionen = np.array([messung.get("OPA-Extinktionen") for messung in messungen])
     eigenabsorption_extinktionen = np.array([messung.get("Eigenabsorptionen") for messung in messungen])
@@ -50,10 +57,12 @@ def retrieve_calibration_data(measurements):
         "Eigenabsorption": eigenabsorption_extinktionen_mittelwert
         })
 
-    return calibration_data
+    return calibration_data, calibration_amount
 
 def retrieve_measurement_data(measurements):
     measurements = measurements.get("Messungen")
+    if measurements is None:
+        return None, None
     reinigungszeit = np.array([measurement.get("Reinigungszeit [min]") for measurement in measurements])
     opa_extinktionen = np.array([measurement.get("OPA-Extinktionen") for measurement in measurements])
     eigenabsorption_extinktionen = np.array([measurement.get("Eigenabsorptionen") for measurement in measurements])
@@ -69,9 +78,13 @@ def retrieve_measurement_data(measurements):
         "OPA-Extinktion 3": opa_extinktionen[2],
         "Eigen-absorption 1": eigenabsorption_extinktionen[0],
         "Eigen-absorption 2": eigenabsorption_extinktionen[1],
-        "Eigen-absorption 3": eigenabsorption_extinktionen[2],  
+        "Eigen-absorption 3": eigenabsorption_extinktionen[2],
         })
-    return measurement_data
+    blind_data = pd.DataFrame({
+        "OPA-Blindwert": opa_blindwert,
+        "Eigenabsorption-Blindwert": eigenabsorption_blindwert
+    }, index = ["Messreihe 1", "Messreihe 2", "Messreihe 3"])
+    return measurement_data, blind_data
 
 def calculate_calibrations(calibration_data):
     #Daten auslesen
@@ -149,7 +162,7 @@ def calibration_figure(bsa_konzentrationen, absolute_extinktionen, steigung, ord
     plt.close(f)
     return f
 
-def grafik_wfk_auswertung(reiniger_eintrag, protein_gehälter, protein_gehälter_mittelwert, protein_gehälter_standardabweichung):
+def figure_wfk_evaluation(reiniger_eintrag, protein_gehälter, protein_gehälter_mittelwert, protein_gehälter_standardabweichung):
     messzeiten=np.array(reiniger_eintrag["Messungen"][0].get("Reinigungszeit [min]").copy())
 
     fig_size = (10, 5)
@@ -164,6 +177,7 @@ def grafik_wfk_auswertung(reiniger_eintrag, protein_gehälter, protein_gehälter
         plt.plot(unmaskierte_messzeiten, unmaskierte_protein_gehälter, label=f"Messreihe {reihennummer+1}", marker='o', linestyle='dotted')
     plt.plot(messzeiten, protein_gehälter_mittelwert, label="Mittelwert", color='red', marker='o', markersize=5, linestyle='solid', linewidth=2)
     plt.errorbar(messzeiten, protein_gehälter_mittelwert, yerr=protein_gehälter_standardabweichung, color='red', elinewidth=1, capsize=2)
+    plt.ylim(bottom = round(min([eintrag for protein_gehalt in protein_gehälter for eintrag in protein_gehalt]+[0]),1)) 
     plt.legend()
     plt.close(f)
     return f
