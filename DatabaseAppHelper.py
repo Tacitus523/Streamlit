@@ -58,17 +58,35 @@ def display_query_result(database_dict, product_search):
         button_phold.button("Details",on_click=handle_buttonpress, args = (x,), key=x)
     return query_result
     
-def display_query_contents(query_result):
-    if st.session_state.product_index is None:
-        st.stop()
-    else:
-        product_index = st.session_state.product_index
+def display_query_calibration(measurements):
+    calibration_data = retrieve_calibration_data(measurements)
+    slope, ordinate, r_value, f = calculate_calibrations(calibration_data)
+    with st.expander("Kalibrierung"):
+        col1, col2 = st.columns((1,1))
+        with col1:
+            st.table(calibration_data.style.format({
+                "BSA-Konzentration [µg/ml]": "{:.0f}",
+                "OPA-Extinktion": "{:.3f}",
+                "Eigenabsorption": "{:.3f}"}))
+        with col2:
+            st.markdown(f"Steigung: {slope:.5f}")
+            st.markdown(f"Ordinate: {ordinate:.1f}")
+            st.markdown(f"Bestimmtheit: {r_value:.4f}")
+            st.pyplot(fig=f, clear_figure=True)
+    return slope
 
-    calibration_data = retrieve_calibrations(query_result[product_index])
-    col1, col2, col3 = st.columns((2,1,1))
-    with col1:
-        st.table(calibration_data.style.format({"BSA-Konzentration [µg/ml]": "{:.0f}",
-                                                "OPA-Extinktion": "{:.3f}",
-                                                "Eigenabsorption": "{:.3f}"}))
-  
-    
+def display_query_measurement(measurements, slope):
+    measurement_data = retrieve_measurement_data(measurements)
+    protein_gehälter, protein_gehälter_mittelwert, protein_gehälter_standardabweichung = wfk_evaluation(measurements, slope)
+    f = grafik_wfk_auswertung(measurements, protein_gehälter, protein_gehälter_mittelwert, protein_gehälter_standardabweichung)
+    with st.expander("Messungen"):
+        st.table(measurement_data.style.format({
+            "Reinigungszeit [min]": "{:.0f}",
+            "OPA-Extinktion 1": "{:.3f}",
+            "OPA-Extinktion 2": "{:.3f}",
+            "OPA-Extinktion 3": "{:.3f}",
+            "Eigen-absorption 1": "{:.3f}",
+            "Eigen-absorption 2": "{:.3f}",
+            "Eigen-absorption 3": "{:.3f}"}))
+
+    st.pyplot(fig=f, clear_figure=True)    
