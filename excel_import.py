@@ -91,3 +91,71 @@ def prepare_download(database_dict):
                 if isinstance(detail_entries[detail_entry], (datetime, pd.Timestamp)):
                     detail_entries[detail_entry] = detail_entries[detail_entry].strftime('%d.%m.%Y')
     return json.dumps(database_dict, indent=2)
+
+#Validierung Kalibrierung
+def validation_calibration():
+    #fehlende/falsche Messwerte überprüfen, Standardwerte nachtragen
+    bsa_konzentrationen=[]
+    for messung in messungen:
+        if not messung.get("OPA-Extinktionen"):
+            raise KeyError("Für jede Messung muss eine Messreihe mit OPA-Extinktionen mit dem Namen \"OPA-Extinktionen\" angegeben werden")
+        
+        if not messung.get("Eigenabsorptionen"):
+            raise KeyError("Für jede Messung muss eine Messreihe mit Eigenabsorptionen mit dem Namen \"Eigenabsorptionen\" angegeben werden")
+
+        if not messung.get("BSA-Konzentrationen [µg/ml]"):
+            messung["BSA-Konzentrationen"] = [500,250,125,62.5,31.3,15.6,7.8,3.9,0]
+
+        for messreihe in messung:
+            if not len(messung.get(messreihe))==len(messung.get("BSA-Konzentrationen [µg/ml]")):    
+                raise ValueError("Es müssen gleich viele Extinktionen und Konzentrationen eingegeben werden")
+            
+            if not bsa_konzentrationen:
+                bsa_konzentrationen=messung.get("BSA-Konzentrationen [µg/ml]")
+            elif not bsa_konzentrationen==messung.get("BSA-Konzentrationen [µg/ml]"):
+                raise ValueError("Extinktionsmesswerte müssen identischen BSA-Konzentrationen entsprechen")
+
+#Validierungen Messungen
+def validation_measurements():
+    #fehlende/falsche Messwerte überprüfen, Standardwerte nachtragen
+    if not reiniger_eintrag.get("Messungen"):
+        raise TypeError("Es liegen keine Messungen zur Auswertung vor")
+
+    if not reiniger_eintrag.get("Kalibrierungen"):
+        raise TypeError("Es liegt keine Kalibrierung für die Auswertung vor")
+
+    messzeiten=None
+    for messung in reiniger_eintrag.get("Messungen"):
+        if not messung.get("OPA-Extinktionen"):
+            raise KeyError("Für jede Messung muss eine Messreihe mit OPA-Extinktionen mit dem Namen \"OPA-Extinktionen\" angegeben werden")
+        
+        if not messung.get("Eigenabsorptionen"):
+            raise KeyError("Für jede Messung muss eine Messreihe mit Eigenabsorptionen mit dem Namen \"Eigenabsorptionen\" angegeben werden")
+
+        if not messung.get("Aliquot"):
+            raise KeyError("Für jede Messung muss eine Messreihe ein Aliquot mit dem Namen \"Aliquot\" angegeben werden")
+        elif not isinstance(messung.get("Aliquot"),(int,float)):
+            raise ValueError("Aliquot muss eine Zahl sein")
+
+        if not messung.get("Reinigungszeit [min]"):
+            messung["Reinigungszeit [min]"] = [0,5,10,20,30]
+
+        if not messung.get("Verdünnungsfaktoren"):
+            messung["Verdünnungsfaktoren"] = [1] * len(messung.get("OPA-Extinktionen"))
+
+        if not messung.get("Maske"):
+            messung["Maske"] = [False] * len(messung.get("OPA-Extinktionen"))
+
+        if not len(messung.get("OPA-Extinktionen"))==len(messung.get("Eigenabsorptionen")):    
+            raise ValueError("Es müssen gleich viele OPA-Extinktionen und Eigenabsorptionen angegeben werden")
+        
+        if not messzeiten:
+            messzeiten=messung.get("Reinigungszeit [min]").copy()
+        elif not messzeiten==messung.get("Reinigungszeit [min]"):
+            raise ValueError("Extinktionsmesswerte müssen identischen Zeitenpunkten entsprechen")
+
+        if not len(messung.get("OPA-Extinktionen"))==len(messung.get("Reinigungszeit [min]")):    
+            raise ValueError("Es müssen gleich viele Extinktionensmesswerte und Zeitpunkte angegeben werden")
+    
+        if not (messung.get("Eigenabsorptions-Blindwert") and messung.get("OPA-Blindwert")):
+            raise ValueError("Es müssen Blindwerte für OPA-Extinktionen und Eigenabsorption angegeben werden")
