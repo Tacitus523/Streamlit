@@ -5,21 +5,39 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 
 def load_database(uploaded_database):
-    #Verification?
     database_dict = json.load(uploaded_database)
-    return database_dict
+    validation_result, validation_comment = validate_database(database_dict)
+    return database_dict, validation_result, validation_comment
+
+def validate_database(database_dict):
+    try:
+        for reiniger_datasets in database_dict.values():
+            for reiniger_dataset in reiniger_datasets:
+                if not reiniger_dataset.get("Details"):
+                    raise ValueError("Fehler: Details einer/mehrerer Datensätze fehlen")
+                if not reiniger_dataset.get("Kalibrierungen"):
+                    raise ValueError("Fehler: Kalibrierung einer/mehrerer Datensätze fehlen")
+                if not reiniger_dataset.get("Messungen"):
+                    raise ValueError("Fehler: Messungen einer/mehrerer Datensätze fehlen")
+    except (TypeError, AttributeError):
+        return False, "Fehler: Unerwartete Datenstruktur"
+    except ValueError as e:
+        return False, e.args[0]
+    return True, "Korrekt"
+            
+            
     
 def retrieve_database_details(database_dict):
     database_detail_data = [pd.DataFrame(database_dict[product][i].get("Details"), index=[i]) for product in database_dict for i in range(len(database_dict[product]))]
     if not database_detail_data:
-        return None
+        return pd.DataFrame()
     database_detail_df = pd.concat(database_detail_data)
     return database_detail_df
 
 def retrieve_unique_names(database_dict):
     database_detail_df = retrieve_database_details(database_dict)
-    if not database_detail_df:
-        return None
+    if database_detail_df.empty:
+        return pd.DataFrame()
     unique_names = pd.Series(database_detail_df["Produktname"].unique(), name = "Produktname")
     unique_names.sort_values(inplace=True)
     return unique_names

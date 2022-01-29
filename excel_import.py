@@ -54,7 +54,7 @@ def import_wfk_data_from_excel(excel_dateipfad, datenbank):
 
     #Datentyp des Datum für das spätere Speichern im json-Format ändern
     for eintrag in details_bib:
-        if isinstance(details_bib[eintrag], pd.Timestamp):
+        if isinstance(details_bib[eintrag], (datetime, pd.Timestamp)):
             details_bib[eintrag] = details_bib[eintrag].strftime('%d.%m.%Y')
 
     #Blindwerte und Aliquote als einzelne Werte aus der Liste lesen
@@ -73,18 +73,16 @@ def import_wfk_data_from_excel(excel_dateipfad, datenbank):
 
     #Neuen Eintrag überprüfen und eintragen
     if not produktname in datenbank:
-        datenbank[produktname]=[eintrag]
+        datenbank[produktname] = [eintrag]
     else:
         if eintrag in datenbank[produktname]:
-            print("Entry duplicate")
             return False
         else:
             datenbank[produktname].append(eintrag)
-            
     return True
 
 def prepare_download(database_dict):
-    #Datentyp des Datum für das spätere Speichern im json-Format ändern
+    #Datentyp des Datums für das Speichern im json-Format ändern
     for cleaner_entry in database_dict:
         cleaner_datasets = database_dict[cleaner_entry]
         for dataset in cleaner_datasets:
