@@ -1,6 +1,6 @@
 import streamlit as st
-from DatabaseAppHelper import *
-from DatabaseAppBackend import *
+from database_app_frontend import *
+from database_app_backend import *
 
 st.set_page_config(page_title="wfk-Datenbank",layout='centered',menu_items={
          'Get Help': 'https://github.com/Tacitus523/Streamlit',
