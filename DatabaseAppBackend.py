@@ -87,8 +87,8 @@ def retrieve_measurement_data(measurements):
     opa_blindwert = [measurement.get("OPA-Blindwert") for measurement in measurements]
     eigenabsorption_blindwert = [measurement.get("Eigenabsorptions-Blindwert") for measurement in measurements]
     #aliquot = np.array([measurement.get("Aliquot") for measurement in measurements])
-    #verdünnungsfaktoren = np.array([measurement.get("Verdünnungsfaktoren") for measurement in measurements]) 
-
+    #verdünnungsfaktoren = np.array([measurement.get("Verdünnungsfaktoren") for measurement in measurements])
+    
     measurement_data = pd.DataFrame({
         "Reinigungszeit [min]": reinigungszeit[0],
         "OPA-Extinktion 1": opa_extinktionen[0],
@@ -100,7 +100,7 @@ def retrieve_measurement_data(measurements):
         })
     blind_data = pd.DataFrame({
         "OPA-Blindwert": opa_blindwert,
-        "Eigenabsorption-Blindwert": eigenabsorption_blindwert
+        "Eigenabsorptions-Blindwert": eigenabsorption_blindwert
     }, index = ["Messreihe 1", "Messreihe 2", "Messreihe 3"])
     return measurement_data, blind_data
 
