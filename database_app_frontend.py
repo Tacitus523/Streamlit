@@ -31,7 +31,7 @@ def display_dataset_upload():
 def display_unique_names(unique_names):
     with st.expander("Eingetragene Produktnamen"):
         if not unique_names.empty:
-            st.write(unique_names.to_string(index = False))
+            st.dataframe(unique_names)
         else:
             st.write("Keine Einträge")
 
