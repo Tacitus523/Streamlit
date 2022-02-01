@@ -3,33 +3,41 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.linear_model import LinearRegression
+import logging
+
+
 
 def load_database(uploaded_database):
     database_dict = json.load(uploaded_database)
-    validation_result, validation_comment = validate_database(database_dict)
-    return database_dict, validation_result, validation_comment
+    validation_status, validation_comment = validate_database(database_dict)
+    return database_dict, validation_status, validation_comment
 
 def validate_database(database_dict):
     try:
         for reiniger_datasets in database_dict.values():
             for reiniger_dataset in reiniger_datasets:
                 if not reiniger_dataset.get("Details"):
+                    logging.error("Error: Missing details of dataset")
                     raise ValueError("Fehler: Details einer/mehrerer Datensätze fehlen")
                 if not reiniger_dataset.get("Kalibrierungen"):
+                    logging.error("Error: Missing calibration of dataset")
                     raise ValueError("Fehler: Kalibrierung einer/mehrerer Datensätze fehlen")
                 if not reiniger_dataset.get("Messungen"):
+                    logging.error("Error: Missing measurement of dataset")
                     raise ValueError("Fehler: Messungen einer/mehrerer Datensätze fehlen")
     except (TypeError, AttributeError):
+        logging.error("Error: Unexcpected datastructur")
         return False, "Fehler: Unerwartete Datenstruktur"
     except ValueError as e:
         return False, e.args[0]
-    return True, "Korrekt"
+    return True, "Erfolg"
             
             
     
 def retrieve_database_details(database_dict):
     database_detail_data = [pd.DataFrame(database_dict[product][i].get("Details"), index=[i]) for product in database_dict for i in range(len(database_dict[product]))]
     if not database_detail_data:
+        logging.info("Database is empty")
         return pd.DataFrame()
     database_detail_df = pd.concat(database_detail_data)
     return database_detail_df
@@ -48,15 +56,16 @@ def retrieve_query_result(database_dict, product_search):
 
 def retrieve_query_details(query_result):
     if query_result is None:
+        logging.info("Query result is empty")
         return None
     detail_data = [pd.DataFrame(query_result[i].get("Details"),index=[i]) for i in range(len(query_result))]
     detail_df = pd.concat(detail_data)
     return detail_df
 
 def retrieve_calibration_data(measurements):
-    #Validierung?
     messungen = measurements.get("Kalibrierungen")
     if messungen is None:
+        logging.error("Calibration is missing")
         return None, None
     
     calibration_amount = len(messungen)
@@ -80,6 +89,7 @@ def retrieve_calibration_data(measurements):
 def retrieve_measurement_data(measurements):
     measurements = measurements.get("Messungen")
     if measurements is None:
+        logging.error("Measurement is missing")
         return None, None
     reinigungszeit = np.array([measurement.get("Reinigungszeit [min]") for measurement in measurements])
     opa_extinktionen = np.array([measurement.get("OPA-Extinktionen") for measurement in measurements])
@@ -99,9 +109,10 @@ def retrieve_measurement_data(measurements):
         "Eigen-absorption 3": eigenabsorption_extinktionen[2],
         })
     blind_data = pd.DataFrame({
+        " ": [f"Messreihe {i}" for i in range(len(opa_blindwert))],
         "OPA-Blindwert": opa_blindwert,
         "Eigenabsorptions-Blindwert": eigenabsorption_blindwert
-    }, index = ["Messreihe 1", "Messreihe 2", "Messreihe 3"])
+    })
     return measurement_data, blind_data
 
 def calculate_calibrations(calibration_data):

@@ -1,5 +1,6 @@
 import pandas as pd
 import json
+import logging
 from datetime import datetime
 
 def import_wfk_data_from_excel(excel_dateipfad, datenbank):
@@ -25,6 +26,7 @@ def import_wfk_data_from_excel(excel_dateipfad, datenbank):
     try:
         df = pd.read_excel(excel_dateipfad, sheet_name="Export", header=[0,1], engine="openpyxl")
     except Exception as e:
+        logging.error("Failed to load the database:" + str(e))
         return False
 
     #Drei Unter-Dataframes ohne überflüssige Werte abteilen
@@ -33,11 +35,11 @@ def import_wfk_data_from_excel(excel_dateipfad, datenbank):
         kalibrierungen = df.get("Kalibrierung").dropna(axis=0,how="all").dropna(axis=1,how="all")
         messungen = df.get("Messung").dropna(axis=0,how="all").dropna(axis=1,how="all")
     except Exception as e:
-        print("Import failed:", e)
+        logging.error("Did not find the expected contents:" + str(e))
         return False
     
     if len(details) == 0 or len(kalibrierungen) == 0 or len(messungen) == 0:
-        print("Import field missing")
+        logging.error("Import field empty")
         return False
 
 
@@ -47,7 +49,7 @@ def import_wfk_data_from_excel(excel_dateipfad, datenbank):
             if "Maskieren" in "".join(spalte):
                 messungen[spalte]=messungen[spalte].astype('bool', copy = False)
     except Exception as e:
-        print("Masking failed:", e)
+        logging.error("Masking failed:" + str(e))
         return False
     
     #Drei Unter-Dataframes in geeignet formatierte Dictionaries verarbeiten
@@ -70,13 +72,13 @@ def import_wfk_data_from_excel(excel_dateipfad, datenbank):
     try:
         validation_measurements(messungen_liste)
     except Exception as e:
-        print("Messungs-Validierung gescheitert:", e.args)
+        logging.error("Messungs-Validierung gescheitert:" + e.args)
         return False
     
     try:
         validation_calibrations(kalibrierungen_liste)
     except Exception as e:
-        print("Kalibrierungs-Validierung gescheitert:", e.args)
+        logging.error("Kalibrierungs-Validierung gescheitert:" + e.args)
         return False
         
     #Neuen Eintrag vorbereiten
@@ -92,6 +94,7 @@ def import_wfk_data_from_excel(excel_dateipfad, datenbank):
         datenbank[produktname] = [eintrag]
     else:
         if eintrag in datenbank[produktname]:
+            logging.warning("Entry is a duplicate")
             return False
         else:
             datenbank[produktname].append(eintrag)
