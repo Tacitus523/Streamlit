@@ -5,8 +5,6 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 import logging
 
-
-
 def load_database(uploaded_database):
     database_dict = json.load(uploaded_database)
     validation_status, validation_comment = validate_database(database_dict)
@@ -109,7 +107,7 @@ def retrieve_measurement_data(measurements):
         "Eigen-absorption 3": eigenabsorption_extinktionen[2],
         })
     blind_data = pd.DataFrame({
-        " ": [f"Messreihe {i}" for i in range(len(opa_blindwert))],
+        " ": [f"Messreihe {i+1}" for i in range(len(opa_blindwert))],
         "OPA-Blindwert": opa_blindwert,
         "Eigenabsorptions-Blindwert": eigenabsorption_blindwert
     })
@@ -196,7 +194,7 @@ def figure_wfk_evaluation(reiniger_eintrag, protein_gehälter, protein_gehälter
 
     fig_size = (10, 5)
     f = plt.figure(figsize=fig_size)
-    plt.title(f"{reiniger_eintrag.get('Details').get('Produktname')}\nZeitlicher Verlauf Proteingehalt auf PK")
+    plt.title(f"{reiniger_eintrag.get('Details').get('Konzentration')} {reiniger_eintrag.get('Details').get('Produktname')}")
     plt.xlabel("Reinigungszeit [min]")
     plt.ylabel("Proteingehalt [µg]")
     plt.grid(True)

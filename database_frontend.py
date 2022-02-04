@@ -11,8 +11,16 @@ def handle_addition_change():
     handle_search_change()
     st.session_state.addition_task = True
 
+def display_view_options(options):
+    st.header("Datenbank-Optionen")
+    option = st.selectbox(
+        'Datenbank bearbeiten, einsehen oder zur Ergebnis-Übersicht wechseln?',
+        options,
+        index = 1,
+        on_change = handle_database_change)
+    return option
+
 def display_dataset_options(options):
-    st.header("Datenbank-Auswahl")
     option = st.selectbox(
         'Bestehende Datenbank laden oder neue Datenbank anlegen?',
         options,
@@ -22,7 +30,7 @@ def display_dataset_options(options):
 
 def display_dataset_upload():
     uploaded_database = st.file_uploader(
-    "",
+    "Datenbank-Auswahl",
     type="json",
     on_change = handle_database_change,
     key = "database_upload")
@@ -55,7 +63,7 @@ def display_database_addition():
 
 def display_database_download(database_json):
     st.download_button(
-    "Datenbank-Download", 
+    "Download", 
     database_json, file_name = "wfk-Datenbank.json", 
     mime = "text/plain", 
     help = "Datenbank als .json herunterladen")
@@ -77,13 +85,12 @@ def display_query_result(detail_df):
 
     for x in range(len(detail_df)):
         col1, col2, col3, col4, col5, col6 = st.columns((1, 2, 1, 1, 1, 1))
-        col1.write(x)  # index
+        col1.write(str(x))  # index
         col2.write(detail_df['Produktname'][x])  # Produktname
         col3.write(detail_df['Konzentration'][x])  # Konzentration
         col4.write(detail_df['Temperatur'][x])   # Temperatur
         col5.write(detail_df['Datum'][x]) # Datum
-        button_phold = col6.empty()  # create a placeholder
-        button_phold.button("Details", on_click=handle_buttonpress, args = (x,), key=x)
+        col6.button("Details", on_click=handle_buttonpress, args = (x,), key=detail_df['Produktname']+str(x))
     
 def display_query_calibration(calibration_data, calibration_amount, slope, ordinate, r_value, calibration_graph):
     with st.expander("Kalibrierung"):
@@ -115,6 +122,40 @@ def display_query_measurement(measurement_data, blind_data):
             "Eigenabsorptions-Blindwert": "{:.3f}"
         }))
 
-
 def display_evaluation_graph(evaluation_graph):
-    st.pyplot(fig = evaluation_graph, clear_figure=True)
+    def handle_overview_buttonpress(figure):
+        st.session_state.overview.append(figure)
+    col1, col2 = st.columns((6, 1))
+    with col1:
+        st.pyplot(fig = evaluation_graph)
+    with col2:
+        st.write('')
+        st.write('')
+        st.write('')
+        st.write('')
+        st.write('')
+        st.write('')
+        st.write('')
+        st.button("Zu Übersicht hinzufügen", on_click=handle_overview_buttonpress, args = (evaluation_graph,), key="overview_button")
+        
+def display_database_deletion(database_dict):
+    def handle_delete_buttonpress(product, x):
+        database_dict[product].pop(x)
+        
+    st.header("Datenbank-Eintrag löschen")
+
+    cols = st.columns((1, 2, 1, 1, 1, 1))
+    fields = ["Index",'Produktname','Konzentration','Temperatur','Datum']
+    for col, field_name in zip(cols, fields):
+        col.write(field_name)
+
+    for product in database_dict:
+        for entry_index in range(len(database_dict[product])):
+            details = database_dict[product][entry_index].get("Details")
+            col1, col2, col3, col4, col5, col6 = st.columns((1, 2, 1, 1, 1, 1))
+            col1.write(str(entry_index))  # index
+            col2.write(details['Produktname'])  # Produktname
+            col3.write(details['Konzentration'])  # Konzentration
+            col4.write(details['Temperatur'])   # Temperatur
+            col5.write(details['Datum']) # Datum
+            col6.button("Delete", on_click=handle_delete_buttonpress, args = (product, entry_index), key=product+str(entry_index))
